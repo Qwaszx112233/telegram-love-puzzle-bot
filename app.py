@@ -198,15 +198,34 @@ def handle_callback_query(callback_query):
                         break
                 
                 if existing_index is not None:
-                    # Якщо клітинка вже вибрана, видаляємо її (відміна вибору)
-                    selected = selected[:existing_index + 1]  # Залишаємо тільки до цієї клітинки
+                    # Якщо клітинка вже вибрана, видаляємо до цієї позиції (відміна ходів по одному)
+                    selected = selected[:existing_index + 1]
                 else:
+                    # Перевіряємо, чи нова клітинка суміжна з останньою вибраною
+                    if selected:  # Якщо вже є вибрані клітинки
+                        last_selected = selected[-1]
+                        # Перевіряємо суміжність (по горизонталі або вертикалі)
+                        is_adjacent = (
+                            (abs(last_selected['x'] - x) == 1 and last_selected['y'] == y) or
+                            (abs(last_selected['y'] - y) == 1 and last_selected['x'] == x)
+                        )
+                        if not is_adjacent:
+                            send_callback_answer(callback_query_id, "Обирай суміжні клітинки! 🔄", True)
+                            return
+                    
                     # Додаємо нову клітинку
                     selected.append({'x': x, 'y': y})
                 
                 game_data['selected'] = selected
                 user_progress['game_state'] = game_data
                 db.update_user_progress(user_id, user_progress)
+                
+                # Показуємо поточну суму в callback відповіді
+                if selected:
+                    current_sum = sum(game_data['grid'][s['x']][s['y']]['number'] for s in selected)
+                    send_callback_answer(callback_query_id, f"Ланцюжок: {len(selected)} клітинок, Сума: {game.format_number(current_sum)}")
+                else:
+                    send_callback_answer(callback_query_id, "Клітинку обрано")
                 
                 # Оновлюємо повідомлення
                 keyboard = create_game_keyboard(game_data, user_id)
@@ -224,7 +243,6 @@ def handle_callback_query(callback_query):
                 """
                 
                 edit_message_text(chat_id, message_id, game_text, keyboard)
-                send_callback_answer(callback_query_id, f"Вибрано клітинку {x},{y}")
         
         elif data.startswith('undo_'):
             # Скасування останнього ходу

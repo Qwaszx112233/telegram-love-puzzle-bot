@@ -10,5 +10,4 @@ __pycache__/
 .pytest_cache/
 .coverage
 .gitignore
-instance/
-.vscode/ 
+bot.py
