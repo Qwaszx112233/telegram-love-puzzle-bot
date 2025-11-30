@@ -1,12 +1,16 @@
+import os
 from flask import Flask, request, jsonify
 import json
 import urllib.parse
 import urllib.request
-from config import BOT_TOKEN, WEB_APP_URL
 from database import Database
 from game_logic import LoveNumberPuzzle
 
 app = Flask(__name__)
+
+# Получаем токен из переменных окружения
+BOT_TOKEN = os.environ.get('BOT_TOKEN')
+WEB_APP_URL = os.environ.get('WEB_APP_URL', 'https://qwaszx112233.github.io/telegram-love-puzzle/')
 
 # Глобальные объекты
 db = Database()
@@ -353,7 +357,7 @@ def handle_callback_query(callback_query):
 def index():
     return jsonify({"status": "ok", "message": "Love Number Puzzle Bot is running"})
 
-@app.route(f'/webhook/{BOT_TOKEN}', methods=['POST'])
+@app.route('/webhook', methods=['POST'])
 def webhook():
     try:
         update = request.get_json()
@@ -510,4 +514,4 @@ def webhook():
         return jsonify({"status": "error", "message": str(e)}), 500
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=10000)
+    app.run(debug=False, host='0.0.0.0', port=int(os.environ.get('PORT', 10000)))
