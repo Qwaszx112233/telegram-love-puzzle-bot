@@ -210,7 +210,7 @@ def handle_callback_query(callback_query):
                             (abs(last_selected['y'] - y) == 1 and last_selected['x'] == x)
                         )
                         if not is_adjacent:
-                            send_callback_answer(callback_query_id, "Обирай суміжні клітинки! 🔄", True)
+                            send_callback_answer(callback_query_id, "Обирай суміжні клітинки! 🔄")
                             return
                     
                     # Додаємо нову клітинку
@@ -223,7 +223,7 @@ def handle_callback_query(callback_query):
                 # Показуємо поточну суму в callback відповіді
                 if selected:
                     current_sum = sum(game_data['grid'][s['x']][s['y']]['number'] for s in selected)
-                    send_callback_answer(callback_query_id, f"Ланцюжок: {len(selected)} клітинок, Сума: {game.format_number(current_sum)}")
+                    send_callback_answer(callback_query_id, f"Ланцюжок: {len(selected)} клітинок\nСума: {game.format_number(current_sum)}")
                 else:
                     send_callback_answer(callback_query_id, "Клітинку обрано")
                 
@@ -261,7 +261,7 @@ def handle_callback_query(callback_query):
                 # Видаляємо останню вибрану клітинку
                 selected = game_data.get('selected', [])
                 if selected:
-                    selected.pop()
+                    removed_cell = selected.pop()
                     game_data['selected'] = selected
                     user_progress['game_state'] = game_data
                     db.update_user_progress(user_id, user_progress)
@@ -282,7 +282,7 @@ def handle_callback_query(callback_query):
                     """
                     
                     edit_message_text(chat_id, message_id, game_text, keyboard)
-                    send_callback_answer(callback_query_id, "Останній хід скасовано ↩️")
+                    send_callback_answer(callback_query_id, f"Скасовано вибір клітинки ({removed_cell['x']},{removed_cell['y']})")
                 else:
                     send_callback_answer(callback_query_id, "Немає ходів для скасування")
         
@@ -362,7 +362,14 @@ def handle_callback_query(callback_query):
             send_callback_answer(callback_query_id, "Повернення до меню 🏠")
         
         elif data == 'info_sum':
-            send_callback_answer(callback_query_id, "Поточна сума ланцюжка")
+            # Показуємо інформацію про поточну суму
+            user_progress = db.get_user_progress(user_id)
+            game_data = user_progress['game_state']
+            if game_data.get('selected', []):
+                current_sum = sum(game_data['grid'][s['x']][s['y']]['number'] for s in game_data['selected'])
+                send_callback_answer(callback_query_id, f"Поточна сума: {game.format_number(current_sum)}\nКількість клітинок: {len(game_data['selected'])}")
+            else:
+                send_callback_answer(callback_query_id, "Жодної клітинки не обрано")
             
         else:
             send_callback_answer(callback_query_id, "Дія виконана")
